@@ -1,0 +1,7 @@
+requests<3.0,>=2.32
+python-dotenv<2.0,>=1.0
+urllib3<2
+
+[dev]
+pytest>=7
+pytest-mock>=3
