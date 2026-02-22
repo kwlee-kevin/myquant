@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-secret-key
+      BRIDGE_API_KEY: ci-bridge-key
+      DATABASE_URL: postgresql://myquant:myquant@postgres:5432/myquant
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker compose build backend
+
+      - name: Run backend tests
+        run: docker compose run --rm backend pytest -q
+
+  bridge-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: "pip"
+          cache-dependency-path: bridge/requirements.txt
+
+      - name: Run bridge tests
+        working-directory: bridge
+        env:
+          KIWOOM_BASE_URL: https://example.invalid
+          KIWOOM_APP_KEY: dummy
+          KIWOOM_APP_SECRET: dummy
+          BACKEND_API_BASE: http://localhost:8000
+          BRIDGE_API_KEY: dummy
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install -U pip
+          ./.venv/bin/python -m pip install -r requirements.txt
+          PYTHONPATH=src ./.venv/bin/python -m pytest -q

@@ -34,6 +34,14 @@ def _create_retry_session() -> requests.Session:
     return session
 
 
+def _safe_response_snippet(response: requests.Response, limit: int = 500) -> str:
+    try:
+        text = (response.text or "").strip()
+    except Exception:
+        text = ""
+    return text[:limit]
+
+
 def _map_market(mrkt_tp: str) -> str:
     if mrkt_tp == "0":
         return "KOSPI"
@@ -102,7 +110,12 @@ def _post_json(
     timeout: int,
 ) -> dict[str, Any]:
     response = session.post(url, headers=headers, json=body, timeout=timeout)
-    response.raise_for_status()
+    if not response.ok:
+        snippet = _safe_response_snippet(response)
+        raise requests.HTTPError(
+            f"HTTP error status={response.status_code} url={url} body={snippet}",
+            response=response,
+        )
     data = response.json()
     if not isinstance(data, dict):
         return {}
@@ -141,8 +154,9 @@ def _fetch_token(
         data = {"_non_json_body": (resp.text or "").strip()[:500]}
 
     if resp.status_code < 200 or resp.status_code >= 300:
+        snippet = _safe_response_snippet(resp)
         raise RuntimeError(
-            f"Kiwoom token HTTP error: status={resp.status_code} keys={list(data.keys())}"
+            f"Kiwoom token HTTP error: status={resp.status_code} keys={list(data.keys())} body={snippet}"
         )
 
     token_type = (data.get("token_type") or data.get("tokenType") or "Bearer")

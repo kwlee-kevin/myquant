@@ -5,6 +5,14 @@ from typing import Any
 import requests
 
 
+def _safe_response_snippet(response: requests.Response, limit: int = 500) -> str:
+    try:
+        text = (response.text or "").strip()
+    except Exception:
+        text = ""
+    return text[:limit]
+
+
 class KiwoomClient:
     def __init__(self, base_url: str, app_key: str, app_secret: str, timeout: int = 20) -> None:
         self.base_url = base_url.rstrip("/")
@@ -24,7 +32,12 @@ class KiwoomClient:
             "secretkey": self.app_secret,
         }
         response = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
-        response.raise_for_status()
+        if not response.ok:
+            snippet = _safe_response_snippet(response)
+            raise requests.HTTPError(
+                f"Kiwoom token HTTP error status={response.status_code} url={url} body={snippet}",
+                response=response,
+            )
         data = response.json()
 
         token_type = data.get("token_type")
@@ -43,7 +56,12 @@ class KiwoomClient:
         }
         payload = {"mrkt_tp": str(mrkt_tp)}
         response = requests.post(url, json=payload, headers=headers, timeout=self.timeout)
-        response.raise_for_status()
+        if not response.ok:
+            snippet = _safe_response_snippet(response)
+            raise requests.HTTPError(
+                f"Kiwoom list HTTP error status={response.status_code} url={url} body={snippet}",
+                response=response,
+            )
         data = response.json()
         return self._extract_items(data)
 
