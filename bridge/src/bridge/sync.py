@@ -84,7 +84,9 @@ def _normalize_ka10099_item(raw: dict[str, Any], mrkt_tp: str) -> dict[str, Any]
     }
 
 
-def _normalize_and_dedup(records_by_market: list[tuple[str, list[dict[str, Any]]]]) -> list[dict[str, Any]]:
+def _normalize_and_dedup(
+    records_by_market: list[tuple[str, list[dict[str, Any]]]],
+) -> list[dict[str, Any]]:
     by_code: dict[str, dict[str, Any]] = {}
     order: list[str] = []
 
@@ -159,7 +161,7 @@ def _fetch_token(
             f"Kiwoom token HTTP error: status={resp.status_code} keys={list(data.keys())} body={snippet}"
         )
 
-    token_type = (data.get("token_type") or data.get("tokenType") or "Bearer")
+    token_type = data.get("token_type") or data.get("tokenType") or "Bearer"
     token = data.get("token") or data.get("access_token") or data.get("accessToken")
 
     if not token:

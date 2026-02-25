@@ -2,8 +2,7 @@ import hmac
 import os
 
 from django.db import transaction
-from django.db.models import Count
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
@@ -42,10 +41,14 @@ class StockListView(APIView):
             page = int(page_raw)
             page_size = int(page_size_raw)
         except ValueError:
-            return Response({"detail": "Invalid page or page_size"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid page or page_size"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         if page < 1 or page_size < 1 or page_size > 100:
-            return Response({"detail": "Invalid page or page_size"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid page or page_size"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         queryset = StockMaster.objects.only(
             "code",
@@ -120,9 +123,7 @@ class StockDetailView(APIView):
 class StockStatsView(APIView):
     def get(self, request):
         by_market_rows = (
-            StockMaster.objects.values("market")
-            .annotate(count=Count("code"))
-            .order_by("market")
+            StockMaster.objects.values("market").annotate(count=Count("code")).order_by("market")
         )
         by_market = {row["market"]: row["count"] for row in by_market_rows}
 
