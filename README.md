@@ -61,3 +61,18 @@ python3 -m pip install pre-commit
 pre-commit install
 pre-commit run --all-files
 ```
+
+# Lint/Format
+ruff check . --fix
+ruff format .
+
+# CI와 동일한 체크만 하고 싶으면
+ruff check .
+ruff format --check .
+
+## Development Commands
+
+### Lint & Format
+```bash
+make lint
+make format

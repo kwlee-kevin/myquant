@@ -39,10 +39,16 @@ class StockDetailSerializer(serializers.ModelSerializer):
 class UpsertItemSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=12)
     name_kr = serializers.CharField(max_length=120)
-    name_en = serializers.CharField(max_length=120, allow_null=True, required=False, allow_blank=True)
+    name_en = serializers.CharField(
+        max_length=120, allow_null=True, required=False, allow_blank=True
+    )
     market = serializers.CharField(max_length=16)
-    category_l1 = serializers.CharField(max_length=64, allow_null=True, required=False, allow_blank=True)
-    category_l2 = serializers.CharField(max_length=64, allow_null=True, required=False, allow_blank=True)
+    category_l1 = serializers.CharField(
+        max_length=64, allow_null=True, required=False, allow_blank=True
+    )
+    category_l2 = serializers.CharField(
+        max_length=64, allow_null=True, required=False, allow_blank=True
+    )
     is_active = serializers.BooleanField(required=False, default=True)
     listed_date = serializers.DateField(required=False, allow_null=True)
     delisted_date = serializers.DateField(required=False, allow_null=True)

@@ -114,13 +114,14 @@ def test_token_parsing_missing_token_raises_runtime_error():
                 json_data={"return_code": "E101", "return_msg": "invalid credential"},
             )
 
-    try:
+    import pytest
+
+    with pytest.raises(RuntimeError) as excinfo:
         sync._fetch_token(Session(), "https://kiwoom.example", "k", "s")
-        assert False, "expected RuntimeError"
-    except RuntimeError as exc:
-        message = str(exc)
-        assert "missing token field" in message
-        assert "return_code=E101" in message
+
+    message = str(excinfo.value)
+    assert "missing token field" in message
+    assert "return_code=E101" in message
 
 
 def test_list_response_unexpected_keys_scans_first_list():
@@ -138,7 +139,9 @@ def test_list_response_unexpected_keys_scans_first_list():
     original = sync._post_json
     sync._post_json = fake_post_json
     try:
-        items = sync._fetch_market_list(DummySession(), "https://kiwoom.example", "Bearer", "t", "0")
+        items = sync._fetch_market_list(
+            DummySession(), "https://kiwoom.example", "Bearer", "t", "0"
+        )
         assert items == [{"code": "005930", "name": "삼성전자"}]
     finally:
         sync._post_json = original
