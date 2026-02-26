@@ -42,7 +42,20 @@ jobs:
         run: docker compose build backend
 
       - name: Run backend tests
-        run: docker compose run --rm backend pytest -q
+        run: |
+          mkdir -p coverage
+          docker compose run --rm \
+            -v "$PWD/coverage:/app/coverage" \
+            backend pytest -q --cov=. \
+              --cov-report=term-missing \
+              --cov-report=xml:/app/coverage/backend-coverage.xml
+
+      - name: Upload backend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage/backend-coverage.xml
+          if-no-files-found: error
 
   bridge-tests:
     needs: lint
@@ -70,4 +83,15 @@ jobs:
           python -m venv .venv
           ./.venv/bin/python -m pip install -U pip
           ./.venv/bin/python -m pip install -r requirements.txt
-          PYTHONPATH=src ./.venv/bin/python -m pytest -q
+          mkdir -p ../coverage
+          PYTHONPATH=src ./.venv/bin/python -m pytest -q \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=xml:../coverage/bridge-coverage.xml
+
+      - name: Upload bridge coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bridge-coverage
+          path: coverage/bridge-coverage.xml
+          if-no-files-found: error
