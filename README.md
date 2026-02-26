@@ -1,41 +1,46 @@
-# MyQuant-v2
+# MyQuant
 
-## CI
-GitHub Actions workflow: `.github/workflows/ci.yml`
+Data-driven quantitative investment platform.
 
-Trigger:
+---
+
+# 🚀 Project Overview
+
+MyQuant is a structured quantitative investment research platform consisting of:
+
+- **Backend (Django + PostgreSQL)**
+- **Bridge (Kiwoom API sync layer)**
+- **Frontend (Next.js)**
+- **Docker-based local development**
+- **CI (GitHub Actions)**
+
+The repository enforces automated testing, linting, and guardrails to ensure reliability and long-term maintainability.
+
+---
+
+# 🧪 Continuous Integration (CI)
+
+GitHub Actions workflow:
+
+```
+.github/workflows/ci.yml
+```
+
+### Triggers
+
 - `push` to `main`
 - `pull_request` targeting `main`
 
-Jobs:
-- `backend-tests`
-  - `docker compose build backend`
-  - `docker compose run --rm backend pytest -q`
-- `bridge-tests` (Python 3.9)
-  - create venv in `bridge/`
-  - install `bridge/requirements.txt`
-  - `PYTHONPATH=src ./.venv/bin/python -m pytest -q`
+### Jobs
 
-No secrets are required in CI. Dummy environment variables are provided for test runs.
+#### 1️⃣ backend-tests
 
-## Run The Same Commands Locally
-Backend:
 ```bash
 docker compose build backend
 docker compose run --rm backend pytest -q
 ```
 
-Bridge:
-```bash
-cd bridge
-python3 -m venv .venv
-./.venv/bin/python -m pip install -U pip
-./.venv/bin/python -m pip install -r requirements.txt
-PYTHONPATH=src ./.venv/bin/python -m pytest -q
-```
-
-## Bridge Tests
-No Kiwoom secrets are required for unit tests.
+#### 2️⃣ bridge-tests (Python 3.9)
 
 ```bash
 cd bridge
@@ -45,34 +50,169 @@ python3 -m venv .venv
 PYTHONPATH=src ./.venv/bin/python -m pytest -q
 ```
 
-## Dev Guardrails
-- `.gitignore` blocks local/generated artifacts (`.DS_Store`, venv caches, `node_modules`, `.next`, logs, `.env`).
-- `.env.example` stays tracked as the template.
-- Pre-commit hooks enforce lightweight safety checks:
-  - trailing whitespace / EOF normalization
-  - merge conflict markers
-  - private key detection
-  - large file blocking
-  - blocked path check (`.env`, `.DS_Store`, venv, `node_modules`, `.next`)
+No production secrets are required for CI. Dummy values are used for test execution.
 
-Install hooks:
+---
+
+# 🛠 Local Development
+
+## Run Backend Tests
+
+```bash
+docker compose build backend
+docker compose run --rm backend pytest -q
+```
+
+## Run Bridge Tests
+
+```bash
+cd bridge
+python3 -m venv .venv
+./.venv/bin/python -m pip install -U pip
+./.venv/bin/python -m pip install -r requirements.txt
+PYTHONPATH=src ./.venv/bin/python -m pytest -q
+```
+
+## Coverage
+Generate backend + bridge coverage reports locally:
+
+```bash
+make coverage
+```
+
+Coverage XML files are written to host path:
+- `./coverage/backend-coverage.xml`
+- `./coverage/bridge-coverage.xml`
+
+---
+
+# 🧹 Linting & Formatting
+
+We use **ruff** for linting and formatting.
+
+### Auto-fix
+
+```bash
+ruff check . --fix
+ruff format .
+```
+
+### Check only (CI equivalent)
+
+```bash
+ruff check .
+ruff format --check .
+```
+
+---
+
+# 📦 Standardized Dev Commands
+
+The project includes a Makefile to unify developer workflow.
+
+### Run lint
+
+```bash
+make lint
+```
+
+### Run format
+
+```bash
+make format
+```
+
+### Run all tests
+
+```bash
+make test
+```
+
+### Run full CI locally
+
+```bash
+make ci
+```
+
+## Quick start (recommended)
+
+```bash
+make tools
+make precommit
+make ci
+
+---
+
+# 🔐 Dev Guardrails
+
+The repository enforces safety rules via:
+
+### `.gitignore`
+Blocks:
+- `.DS_Store`
+- `.env`
+- virtual environments
+- `node_modules`
+- `.next`
+- logs
+
+`.env.example` remains tracked as a template.
+
+### Pre-commit Hooks
+
+Enforced checks:
+- trailing whitespace / EOF normalization
+- merge conflict markers
+- private key detection
+- large file blocking
+- blocked path protection
+- ruff linting
+
+Install locally:
+
 ```bash
 python3 -m pip install pre-commit
 pre-commit install
 pre-commit run --all-files
 ```
 
-# Lint/Format
-ruff check . --fix
-ruff format .
+---
 
-# CI와 동일한 체크만 하고 싶으면
-ruff check .
-ruff format --check .
+# 🏗 Architecture Summary
 
-## Development Commands
+```
+MyQuant
+ ├── backend (Django API)
+ ├── bridge (Kiwoom sync layer)
+ ├── frontend (Next.js UI)
+ ├── docker-compose.yml
+ └── .github/workflows
+```
 
-### Lint & Format
-```bash
-make lint
-make format
+---
+
+# 📌 Engineering Principles
+
+- CI must pass before merge
+- Tests protect critical logic
+- Lint must pass
+- PR-based workflow
+- No secrets in repository
+
+---
+
+# 🔮 Next Improvements
+
+Planned improvements:
+
+- Test coverage reporting
+- Type safety (mypy)
+- Version tagging strategy
+- Release notes automation
+- ADR documentation structure
+
+---
+
+# License
+
+MIT (to be finalized)
