@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   lint:
     name: lint (ruff)
@@ -95,3 +99,152 @@ jobs:
           name: bridge-coverage
           path: coverage/bridge-coverage.xml
           if-no-files-found: error
+
+  coverage-summary:
+    needs: [backend-tests, bridge-tests]
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_COV_MIN: "85"
+      BRIDGE_COV_MIN: "55"
+    steps:
+      - name: Download backend coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: artifacts/backend
+
+      - name: Download bridge coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bridge-coverage
+          path: artifacts/bridge
+
+      - name: Upload combined coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-artifacts
+          path: artifacts
+          if-no-files-found: error
+
+      - name: Publish coverage summary
+        id: coverage_summary
+        run: |
+          python - <<'PY'
+          import os
+          import xml.etree.ElementTree as ET
+
+          def read_pct(path: str) -> float:
+              if not os.path.exists(path):
+                  raise FileNotFoundError(f"Coverage XML not found: {path}")
+              root = ET.parse(path).getroot()
+              return float(root.attrib.get("line-rate", "0")) * 100.0
+
+          backend_path = "artifacts/backend/backend-coverage.xml"
+          bridge_path = "artifacts/bridge/bridge-coverage.xml"
+          backend_pct = read_pct(backend_path)
+          bridge_pct = read_pct(bridge_path)
+
+          backend_min = float(os.getenv("BACKEND_COV_MIN", "85"))
+          bridge_min = float(os.getenv("BRIDGE_COV_MIN", "55"))
+
+          backend_ok = backend_pct >= backend_min
+          bridge_ok = bridge_pct >= bridge_min
+          overall_ok = backend_ok and bridge_ok
+          overall_text = "PASS" if overall_ok else "FAIL"
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write("## Coverage Summary\n")
+              fh.write("\n")
+              fh.write("| Component | Total Coverage | Minimum | Result |\n")
+              fh.write("|---|---:|---:|---|\n")
+              fh.write(
+                  f"| Backend | {backend_pct:.2f}% | {backend_min:.2f}% | {'PASS' if backend_ok else 'FAIL'} |\n"
+              )
+              fh.write(
+                  f"| Bridge | {bridge_pct:.2f}% | {bridge_min:.2f}% | {'PASS' if bridge_ok else 'FAIL'} |\n"
+              )
+              fh.write("\n")
+              fh.write(f"**OVERALL: {overall_text}**\n")
+              fh.write(f"- Backend XML: `{backend_path}`\n")
+              fh.write(f"- Bridge XML: `{bridge_path}`\n")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"backend_pct={backend_pct:.2f}\n")
+              out.write(f"bridge_pct={bridge_pct:.2f}\n")
+              out.write(f"backend_min={backend_min:.2f}\n")
+              out.write(f"bridge_min={bridge_min:.2f}\n")
+              out.write(f"backend_status={'PASS' if backend_ok else 'FAIL'}\n")
+              out.write(f"bridge_status={'PASS' if bridge_ok else 'FAIL'}\n")
+              out.write(f"overall_status={overall_text}\n")
+
+          PY
+
+      - name: Upsert PR coverage comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          BACKEND_PCT: ${{ steps.coverage_summary.outputs.backend_pct }}
+          BRIDGE_PCT: ${{ steps.coverage_summary.outputs.bridge_pct }}
+          BACKEND_MIN: ${{ steps.coverage_summary.outputs.backend_min }}
+          BRIDGE_MIN: ${{ steps.coverage_summary.outputs.bridge_min }}
+          BACKEND_STATUS: ${{ steps.coverage_summary.outputs.backend_status }}
+          BRIDGE_STATUS: ${{ steps.coverage_summary.outputs.bridge_status }}
+          OVERALL_STATUS: ${{ steps.coverage_summary.outputs.overall_status }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = "<!-- myquant-coverage-summary -->";
+            const issue_number = context.payload.pull_request?.number;
+            if (!issue_number) {
+              core.info("No pull_request context; skipping coverage comment.");
+              return;
+            }
+
+            const body = `${marker}
+            ### Coverage Summary
+
+            | component | coverage | threshold | status |
+            |---|---:|---:|---|
+            | backend | ${process.env.BACKEND_PCT}% | ${process.env.BACKEND_MIN}% | ${process.env.BACKEND_STATUS} |
+            | bridge | ${process.env.BRIDGE_PCT}% | ${process.env.BRIDGE_MIN}% | ${process.env.BRIDGE_STATUS} |
+
+            **OVERALL: ${process.env.OVERALL_STATUS}**
+
+            Coverage files are available as workflow artifacts.`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.find(
+              (c) => c.user?.type === "Bot" && c.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info(`Updated coverage comment: ${existing.id}`);
+            } else {
+              const created = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                body,
+              });
+              core.info(`Created coverage comment: ${created.data.id}`);
+            }
+
+      - name: Enforce coverage thresholds
+        if: steps.coverage_summary.outputs.overall_status != 'PASS'
+        run: |
+          echo "Coverage thresholds not met:"
+          echo "backend=${{ steps.coverage_summary.outputs.backend_pct }}% (min ${{ steps.coverage_summary.outputs.backend_min }}%)"
+          echo "bridge=${{ steps.coverage_summary.outputs.bridge_pct }}% (min ${{ steps.coverage_summary.outputs.bridge_min }}%)"
+          exit 1

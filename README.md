@@ -83,6 +83,19 @@ make coverage
 Coverage XML files are written to host path:
 - `./coverage/backend-coverage.xml`
 - `./coverage/bridge-coverage.xml`
+- CI publishes backend/bridge coverage totals in the GitHub Actions Job Summary.
+- CI also uploads coverage XML files as workflow artifacts.
+- On pull requests, CI posts/updates a sticky coverage summary comment.
+
+Optional threshold check:
+
+```bash
+make coverage-check
+```
+
+Default thresholds:
+- backend: `85%`
+- bridge: `55%`
 
 ---
 
@@ -140,6 +153,7 @@ make ci
 make tools
 make precommit
 make ci
+```
 
 ---
 
