@@ -223,30 +223,56 @@ def _check_backend_health(backend_api_base: str) -> bool:
         return False
 
 
-def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
-    raw_count_total = 0
-    normalized_unique = 0
-    limited_to = 0
-    listed_date_parsed = 0
-    category_l1_missing = 0
+def compute_change_summary(
+    *,
+    fetched_markets: int,
+    raw_count_total: int,
+    normalized_items: list[dict[str, Any]],
+    selected_items: list[dict[str, Any]],
+    dry_run: bool,
+    push_result: str | dict[str, Any],
+) -> dict[str, Any]:
+    normalized_unique = len(normalized_items)
+    listed_date_parsed = sum(1 for item in normalized_items if item.get("listed_date") is not None)
+    category_l1_missing = sum(1 for item in normalized_items if item.get("category_l1") is None)
     per_market_counts: dict[str, int] = {}
-    push_result: str | dict[str, Any] = "not_started"
+    for item in normalized_items:
+        market = str(item.get("market", "UNKNOWN"))
+        per_market_counts[market] = per_market_counts.get(market, 0) + 1
 
-    def print_summary() -> None:
-        quality = {
+    return {
+        "fetched_markets": fetched_markets,
+        "raw_count_total": raw_count_total,
+        "normalized_unique": normalized_unique,
+        "limited_to": len(selected_items),
+        "dry_run": dry_run,
+        "push_result": push_result,
+        "quality": {
             "listed_date_parsed": f"{listed_date_parsed}/{normalized_unique}",
             "category_l1_missing": f"{category_l1_missing}/{normalized_unique}",
             "per_market_counts": per_market_counts,
-        }
-        summary = {
-            "fetched_markets": len(MARKET_TYPES),
-            "raw_count_total": raw_count_total,
-            "normalized_unique": normalized_unique,
-            "limited_to": limited_to,
-            "dry_run": dry_run,
-            "push_result": push_result,
-            "quality": json.dumps(quality, ensure_ascii=False, separators=(",", ":")),
-        }
+        },
+    }
+
+
+def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
+    raw_count_total = 0
+    push_result: str | dict[str, Any] = "not_started"
+
+    def print_summary(
+        items_for_summary: list[dict[str, Any]], all_normalized: list[dict[str, Any]]
+    ) -> None:
+        summary = compute_change_summary(
+            fetched_markets=len(MARKET_TYPES),
+            raw_count_total=raw_count_total,
+            normalized_items=all_normalized,
+            selected_items=items_for_summary,
+            dry_run=dry_run,
+            push_result=push_result,
+        )
+        summary["quality"] = json.dumps(
+            summary["quality"], ensure_ascii=False, separators=(",", ":")
+        )
         print("summary " + " ".join(f"{key}={summary[key]}" for key in summary))
 
     _load_dotenv_if_available()
@@ -259,11 +285,11 @@ def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
 
     if not app_key or not app_secret:
         print("Missing required env vars: KIWOOM_APP_KEY and/or KIWOOM_APP_SECRET")
-        print_summary()
+        print_summary([], [])
         return 2
     if not base_url:
         print("Missing required env var: KIWOOM_BASE_URL")
-        print_summary()
+        print_summary([], [])
         return 2
 
     session = _create_retry_session()
@@ -272,7 +298,7 @@ def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
         token_type, token = _fetch_token(session, base_url, app_key, app_secret)
     except Exception as e:
         print(f"Failed to fetch Kiwoom token: {e}")
-        print_summary()
+        print_summary([], [])
         return 1
 
     records_by_market: list[tuple[str, list[dict[str, Any]]]] = []
@@ -284,31 +310,45 @@ def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
             print(f"mrkt_tp={mrkt_tp} received={len(records)}")
 
     normalized_items = _normalize_and_dedup(records_by_market)
-    normalized_unique = len(normalized_items)
-    listed_date_parsed = sum(1 for item in normalized_items if item.get("listed_date") is not None)
-    category_l1_missing = sum(1 for item in normalized_items if item.get("category_l1") is None)
-    per_market_counts = {}
-    for item in normalized_items:
-        market = str(item.get("market", "UNKNOWN"))
-        per_market_counts[market] = per_market_counts.get(market, 0) + 1
-
     if verbose:
+        pre_summary = compute_change_summary(
+            fetched_markets=len(MARKET_TYPES),
+            raw_count_total=raw_count_total,
+            normalized_items=normalized_items,
+            selected_items=normalized_items,
+            dry_run=dry_run,
+            push_result=push_result,
+        )
+        quality = pre_summary["quality"]
         print(
             "quality "
-            f"listed_date_parsed={listed_date_parsed}/{normalized_unique} "
-            f"category_l1_missing={category_l1_missing}/{normalized_unique} "
-            f"per_market_counts={json.dumps(per_market_counts, ensure_ascii=False)}"
+            f"listed_date_parsed={quality['listed_date_parsed']} "
+            f"category_l1_missing={quality['category_l1_missing']} "
+            f"per_market_counts={json.dumps(quality['per_market_counts'], ensure_ascii=False)}"
         )
 
     items = normalized_items
     if limit is not None:
         items = items[:limit]
-    limited_to = len(items)
 
     push_result = "skipped"
 
     if dry_run:
         print(f"total={len(items)}")
+        print(
+            "change_summary="
+            + json.dumps(
+                compute_change_summary(
+                    fetched_markets=len(MARKET_TYPES),
+                    raw_count_total=raw_count_total,
+                    normalized_items=normalized_items,
+                    selected_items=items,
+                    dry_run=True,
+                    push_result=push_result,
+                ),
+                ensure_ascii=False,
+            )
+        )
         print(json.dumps(items[:3], ensure_ascii=False, indent=2))
     else:
         if not _check_backend_health(backend_api_base):
@@ -316,7 +356,7 @@ def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
                 f"Backend not running at {backend_api_base}. Start docker compose and verify with curl {backend_api_base}/health"
             )
             push_result = "health_check_failed"
-            print_summary()
+            print_summary(items, normalized_items)
             return 3
 
         upsert_url = f"{backend_api_base}/api/internal/stocks:upsert"
@@ -334,8 +374,8 @@ def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
             status_code = getattr(getattr(exc, "response", None), "status_code", None)
             print(f"Backend upsert failed url={upsert_url} status={status_code}")
             push_result = f"upsert_error_status_{status_code}"
-            print_summary()
+            print_summary(items, normalized_items)
             return 4
 
-    print_summary()
+    print_summary(items, normalized_items)
     return 0

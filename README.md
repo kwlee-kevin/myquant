@@ -73,6 +73,14 @@ python3 -m venv .venv
 PYTHONPATH=src ./.venv/bin/python -m pytest -q
 ```
 
+## Bridge Sync Dry-Run
+Preview normalized stock sync output without backend writes:
+
+```bash
+cd bridge
+PYTHONPATH=src ./.venv/bin/python -m bridge.cli sync --dry-run --limit 5
+```
+
 ## Coverage
 Generate backend + bridge coverage reports locally:
 
