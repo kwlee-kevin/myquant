@@ -3,8 +3,10 @@
 - Why:
 
 ## Linked Spec
-- Spec (optional): `docs/specs/...`
-- ADR (optional): `docs/adr/...`
+Provide one of the following:
+- Spec: `docs/specs/...`
+- ADR (if any): `docs/adr/...`
+- `N/A (reason)` for tiny changes only
 
 ## Type
 - [ ] feat
