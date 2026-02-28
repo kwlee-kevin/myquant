@@ -8,6 +8,7 @@ type StockRow = {
   code: string;
   name_kr: string;
   market: string;
+  security_type: string;
   category_l1: string | null;
   updated_at: string;
 };
@@ -29,6 +30,7 @@ type StocksPageProps = {
     keywords?: string;
     op?: string;
     markets?: string | string[];
+    security_types?: string | string[];
     categories?: string | string[];
     page?: string;
     page_size?: string;
@@ -59,6 +61,7 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
   const keywords = searchParams?.keywords ?? "";
   const op = searchParams?.op === "or" ? "or" : "and";
   const markets = normalizeList(searchParams?.markets);
+  const securityTypes = normalizeList(searchParams?.security_types);
   const categories = normalizeList(searchParams?.categories);
   const pageSize = clampPageSize(searchParams?.page_size);
   const page = parsePage(searchParams?.page);
@@ -69,6 +72,7 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
     keywords,
     op,
     markets,
+    security_types: securityTypes,
     categories,
     page,
     page_size: pageSize,
@@ -112,6 +116,7 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
     keywords,
     op,
     markets,
+    security_types: securityTypes,
     categories,
     page: Math.max(1, page - 1),
     page_size: pageSize,
@@ -120,6 +125,7 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
     keywords,
     op,
     markets,
+    security_types: securityTypes,
     categories,
     page: Math.min(totalPages, page + 1),
     page_size: pageSize,
@@ -140,6 +146,7 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
         initialKeywords={keywords}
         initialOp={op}
         initialMarkets={markets}
+        initialSecurityTypes={securityTypes}
         initialCategories={categories}
         initialPageSize={pageSize}
         stats={stats}
@@ -156,6 +163,7 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
                   <th className="px-3 py-2 text-left">name_kr</th>
                   <th className="px-3 py-2 text-left">code</th>
                   <th className="px-3 py-2 text-left">market</th>
+                  <th className="px-3 py-2 text-left">security_type</th>
                   <th className="px-3 py-2 text-left">category_l1</th>
                   <th className="px-3 py-2 text-left">updated_at</th>
                 </tr>
@@ -170,6 +178,7 @@ export default async function StocksPage({ searchParams }: StocksPageProps) {
                     </td>
                     <td className="px-3 py-2">{row.code}</td>
                     <td className="px-3 py-2">{row.market}</td>
+                    <td className="px-3 py-2">{row.security_type}</td>
                     <td className="px-3 py-2">{row.category_l1 ?? "-"}</td>
                     <td className="px-3 py-2">{new Date(row.updated_at).toLocaleString()}</td>
                   </tr>

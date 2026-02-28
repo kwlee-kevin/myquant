@@ -14,6 +14,7 @@ def create_stock(**kwargs):
         "name_kr": "삼성전자",
         "name_en": "Samsung Electronics",
         "market": "KOSPI",
+        "security_type": "COMMON_STOCK",
         "category_l1": "반도체",
         "category_l2": None,
         "is_active": True,
@@ -40,9 +41,27 @@ def test_keywords_and_vs_or(client):
 
 @pytest.mark.django_db
 def test_categories_and_markets_repeated_params(client):
-    create_stock(code="005930", market="KOSPI", category_l1="반도체", category_l2=None)
-    create_stock(code="000660", market="KOSPI", category_l1="IT", category_l2="반도체")
-    create_stock(code="035420", market="KOSDAQ", category_l1="인터넷", category_l2=None)
+    create_stock(
+        code="005930",
+        market="KOSPI",
+        security_type="COMMON_STOCK",
+        category_l1="반도체",
+        category_l2=None,
+    )
+    create_stock(
+        code="000660",
+        market="KOSPI",
+        security_type="ETF",
+        category_l1="IT",
+        category_l2="반도체",
+    )
+    create_stock(
+        code="035420",
+        market="KOSDAQ",
+        security_type="COMMON_STOCK",
+        category_l1="인터넷",
+        category_l2=None,
+    )
 
     response = client.get(
         "/api/stocks",
@@ -55,6 +74,21 @@ def test_categories_and_markets_repeated_params(client):
     assert response.status_code == 200
     codes = {item["code"] for item in response.json()["results"]}
     assert codes == {"005930", "000660"}
+
+
+@pytest.mark.django_db
+def test_security_type_repeated_filter(client):
+    create_stock(code="A00001", market="KOSPI", security_type="COMMON_STOCK")
+    create_stock(code="A00002", market="KOSPI", security_type="ETF")
+    create_stock(code="A00003", market="KOSDAQ", security_type="REIT")
+
+    response = client.get(
+        "/api/stocks",
+        {"security_types": ["COMMON_STOCK", "ETF"], "markets": ["KOSPI", "KOSDAQ"]},
+    )
+    assert response.status_code == 200
+    codes = {item["code"] for item in response.json()["results"]}
+    assert codes == {"A00001", "A00002"}
 
 
 @pytest.mark.django_db
@@ -95,6 +129,7 @@ def test_upsert_requires_bridge_key(client, monkeypatch):
                 "code": "005930",
                 "name_kr": "삼성전자",
                 "market": "KOSPI",
+                "security_type": "COMMON_STOCK",
             }
         ]
     }
@@ -122,6 +157,7 @@ def test_upsert_insert_then_update_counts(client, monkeypatch):
                 "name_kr": "삼성전자",
                 "name_en": "Samsung Electronics",
                 "market": "KOSPI",
+                "security_type": "COMMON_STOCK",
                 "category_l1": "반도체",
                 "is_active": True,
             },
@@ -130,6 +166,7 @@ def test_upsert_insert_then_update_counts(client, monkeypatch):
                 "name_kr": "SK하이닉스",
                 "name_en": "SK hynix",
                 "market": "KOSPI",
+                "security_type": "COMMON_STOCK",
                 "category_l1": "반도체",
                 "is_active": True,
             },
@@ -151,6 +188,7 @@ def test_upsert_insert_then_update_counts(client, monkeypatch):
                 "code": "005930",
                 "name_kr": "삼성전자(수정)",
                 "market": "KOSPI",
+                "security_type": "COMMON_STOCK",
                 "category_l1": "반도체",
                 "is_active": True,
             },
@@ -158,6 +196,7 @@ def test_upsert_insert_then_update_counts(client, monkeypatch):
                 "code": "035420",
                 "name_kr": "NAVER",
                 "market": "KOSDAQ",
+                "security_type": "COMMON_STOCK",
                 "category_l1": "인터넷",
                 "is_active": True,
             },
@@ -186,6 +225,7 @@ def test_upsert_unchanged_and_updated_metrics(client, monkeypatch):
                 "code": "005930",
                 "name_kr": "삼성전자",
                 "market": "KOSPI",
+                "security_type": "COMMON_STOCK",
                 "category_l1": "반도체",
                 "is_active": True,
             }
@@ -215,6 +255,7 @@ def test_upsert_unchanged_and_updated_metrics(client, monkeypatch):
                 "code": "005930",
                 "name_kr": "삼성전자(변경)",
                 "market": "KOSPI",
+                "security_type": "COMMON_STOCK",
                 "category_l1": "반도체",
                 "is_active": True,
             }
@@ -240,6 +281,7 @@ def test_list_ordering_and_filters_with_large_dataset(client):
                 name_kr=f"종목{i:03d}",
                 name_en=None,
                 market="KOSPI" if i % 2 == 0 else "KOSDAQ",
+                security_type="COMMON_STOCK",
                 category_l1="반도체" if i % 3 == 0 else "자동차",
                 category_l2=None,
                 is_active=True,
@@ -271,7 +313,7 @@ def test_stats_endpoint_returns_market_and_top_category_counts(client):
             StockMaster(code="A00001", name_kr="A1", market="KOSPI", category_l1="반도체"),
             StockMaster(code="A00002", name_kr="A2", market="KOSPI", category_l1="반도체"),
             StockMaster(code="A00003", name_kr="A3", market="KOSDAQ", category_l1="자동차"),
-            StockMaster(code="A00004", name_kr="A4", market="ETF", category_l1=None),
+            StockMaster(code="A00004", name_kr="A4", market="KONEX", category_l1=None),
         ]
     )
 
@@ -281,5 +323,5 @@ def test_stats_endpoint_returns_market_and_top_category_counts(client):
 
     assert payload["by_market"]["KOSPI"] == 2
     assert payload["by_market"]["KOSDAQ"] == 1
-    assert payload["by_market"]["ETF"] == 1
+    assert payload["by_market"]["KONEX"] == 1
     assert payload["top_category_l1"][0] == {"category_l1": "반도체", "count": 2}

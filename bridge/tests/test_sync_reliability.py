@@ -87,7 +87,7 @@ def test_verbose_and_summary_output(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "mrkt_tp=0 received=1" in out
     assert "quality listed_date_parsed=" in out
-    assert "summary fetched_markets=9" in out
+    assert "summary fetched_markets=3" in out
     assert "limited_to=2" in out
 
 
