@@ -55,6 +55,7 @@ class StockListView(APIView):
             "name_kr",
             "name_en",
             "market",
+            "security_type",
             "category_l1",
             "category_l2",
             "is_active",
@@ -93,6 +94,12 @@ class StockListView(APIView):
         markets = [value for value in request.query_params.getlist("markets") if value]
         if markets:
             queryset = queryset.filter(market__in=markets)
+
+        security_types = [
+            value for value in request.query_params.getlist("security_types") if value
+        ]
+        if security_types:
+            queryset = queryset.filter(security_type__in=security_types)
 
         if ordering in {"code", "-code"}:
             queryset = queryset.order_by(ordering)

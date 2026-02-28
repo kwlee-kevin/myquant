@@ -9,6 +9,7 @@ type StocksFiltersProps = {
   initialKeywords: string;
   initialOp: "and" | "or";
   initialMarkets: string[];
+  initialSecurityTypes: string[];
   initialCategories: string[];
   initialPageSize: number;
   stats: {
@@ -17,12 +18,28 @@ type StocksFiltersProps = {
   } | null;
 };
 
-const MARKET_OPTIONS = ["KOSPI", "KOSDAQ", "KONEX", "ETF", "ETN"];
+const MARKET_OPTIONS = ["KOSPI", "KOSDAQ", "KONEX"];
+const SECURITY_TYPE_OPTIONS = [
+  "COMMON_STOCK",
+  "ETF",
+  "ETN",
+  "ETN_LOSS_LIMIT",
+  "GOLD_SPOT",
+  "ETN_VOLATILITY",
+  "INFRA_FUND",
+  "ELW",
+  "MUTUAL_FUND",
+  "WARRANT",
+  "REIT",
+  "WARRANT_CERT",
+  "HIGH_YIELD_FUND",
+];
 
 export default function StocksFilters({
   initialKeywords,
   initialOp,
   initialMarkets,
+  initialSecurityTypes,
   initialCategories,
   initialPageSize,
   stats,
@@ -33,16 +50,19 @@ export default function StocksFilters({
   const [keywords, setKeywords] = useState(initialKeywords);
   const [op, setOp] = useState<"and" | "or">(initialOp);
   const [markets, setMarkets] = useState<string[]>(initialMarkets);
+  const [securityTypes, setSecurityTypes] = useState<string[]>(initialSecurityTypes);
   const [categories, setCategories] = useState<string[]>(initialCategories);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
 
   const selectedMarketSet = useMemo(() => new Set(markets), [markets]);
+  const selectedSecurityTypeSet = useMemo(() => new Set(securityTypes), [securityTypes]);
   const selectedCategorySet = useMemo(() => new Set(categories), [categories]);
 
   const pushFilters = (next: {
     keywords: string;
     op: "and" | "or";
     markets: string[];
+    securityTypes: string[];
     categories: string[];
     pageSize: number;
   }) => {
@@ -50,6 +70,7 @@ export default function StocksFilters({
       keywords: next.keywords,
       op: next.op,
       markets: next.markets,
+      security_types: next.securityTypes,
       categories: next.categories,
       page: 1,
       page_size: next.pageSize,
@@ -59,7 +80,7 @@ export default function StocksFilters({
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    pushFilters({ keywords, op, markets, categories, pageSize });
+    pushFilters({ keywords, op, markets, securityTypes, categories, pageSize });
   };
 
   const toggleMarket = (market: string) => {
@@ -67,7 +88,22 @@ export default function StocksFilters({
       ? markets.filter((value) => value !== market)
       : [...markets, market];
     setMarkets(nextMarkets);
-    pushFilters({ keywords, op, markets: nextMarkets, categories, pageSize });
+    pushFilters({ keywords, op, markets: nextMarkets, securityTypes, categories, pageSize });
+  };
+
+  const toggleSecurityType = (securityType: string) => {
+    const nextSecurityTypes = selectedSecurityTypeSet.has(securityType)
+      ? securityTypes.filter((value) => value !== securityType)
+      : [...securityTypes, securityType];
+    setSecurityTypes(nextSecurityTypes);
+    pushFilters({
+      keywords,
+      op,
+      markets,
+      securityTypes: nextSecurityTypes,
+      categories,
+      pageSize,
+    });
   };
 
   const toggleCategory = (category: string) => {
@@ -75,7 +111,14 @@ export default function StocksFilters({
       ? categories.filter((value) => value !== category)
       : [...categories, category];
     setCategories(nextCategories);
-    pushFilters({ keywords, op, markets, categories: nextCategories, pageSize });
+    pushFilters({
+      keywords,
+      op,
+      markets,
+      securityTypes,
+      categories: nextCategories,
+      pageSize,
+    });
   };
 
   return (
@@ -98,7 +141,7 @@ export default function StocksFilters({
             onChange={(e) => {
               const nextOp = e.target.value as "and" | "or";
               setOp(nextOp);
-              pushFilters({ keywords, op: nextOp, markets, categories, pageSize });
+              pushFilters({ keywords, op: nextOp, markets, securityTypes, categories, pageSize });
             }}
             className="w-full rounded border border-gray-300 px-3 py-2"
           >
@@ -127,6 +170,22 @@ export default function StocksFilters({
               </label>
             );
           })}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="mb-1 text-sm font-medium">Security Types</p>
+        <div className="flex flex-wrap gap-3">
+          {SECURITY_TYPE_OPTIONS.map((securityType) => (
+            <label key={securityType} className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={selectedSecurityTypeSet.has(securityType)}
+                onChange={() => toggleSecurityType(securityType)}
+              />
+              <span>{securityType}</span>
+            </label>
+          ))}
         </div>
       </div>
 
@@ -160,7 +219,14 @@ export default function StocksFilters({
             onChange={(e) => {
               const nextSize = Number(e.target.value);
               setPageSize(nextSize);
-              pushFilters({ keywords, op, markets, categories, pageSize: nextSize });
+              pushFilters({
+                keywords,
+                op,
+                markets,
+                securityTypes,
+                categories,
+                pageSize: nextSize,
+              });
             }}
             className="w-full rounded border border-gray-300 px-3 py-2"
           >

@@ -9,7 +9,22 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-MARKET_TYPES = ["0", "10", "50", "8", "3", "5", "4", "6", "9"]
+MARKET_TYPES = ["0", "10", "50"]
+
+SECURITY_TYPE_MAP = {
+    "60": "ETN",
+    "70": "ETN_LOSS_LIMIT",
+    "80": "GOLD_SPOT",
+    "90": "ETN_VOLATILITY",
+    "2": "INFRA_FUND",
+    "3": "ELW",
+    "4": "MUTUAL_FUND",
+    "5": "WARRANT",
+    "6": "REIT",
+    "7": "WARRANT_CERT",
+    "8": "ETF",
+    "9": "HIGH_YIELD_FUND",
+}
 
 
 def _load_dotenv_if_available() -> None:
@@ -42,19 +57,26 @@ def _safe_response_snippet(response: requests.Response, limit: int = 500) -> str
     return text[:limit]
 
 
-def _map_market(mrkt_tp: str) -> str:
+def _map_market(mrkt_tp: str) -> str | None:
     if mrkt_tp == "0":
         return "KOSPI"
     if mrkt_tp == "10":
         return "KOSDAQ"
     if mrkt_tp == "50":
         return "KONEX"
-    if mrkt_tp == "8":
-        return "ETF"
-    return "ETN"
+    return None
+
+
+def _map_security_type(market_code: Any) -> str:
+    key = str(market_code or "").strip()
+    return SECURITY_TYPE_MAP.get(key, "COMMON_STOCK")
 
 
 def _normalize_ka10099_item(raw: dict[str, Any], mrkt_tp: str) -> dict[str, Any] | None:
+    market = _map_market(mrkt_tp)
+    if market is None:
+        return None
+
     code = str(raw.get("code") or raw.get("stk_cd") or "").strip().upper()
     name_kr = str(raw.get("name") or raw.get("stk_nm") or "").strip()
     if not code or not name_kr:
@@ -70,12 +92,16 @@ def _normalize_ka10099_item(raw: dict[str, Any], mrkt_tp: str) -> dict[str, Any]
 
     category_l1 = str(raw.get("upName") or "").strip() or None
     category_l2 = str(raw.get("companyClassName") or "").strip() or None
+    market_code_raw = str(raw.get("marketCode") or "").strip() or None
 
     return {
         "code": code,
         "name_kr": name_kr,
         "name_en": None,
-        "market": _map_market(mrkt_tp),
+        "market": market,
+        "security_type": _map_security_type(market_code_raw),
+        "mrkt_tp_raw": str(mrkt_tp),
+        "market_code_raw": market_code_raw,
         "category_l1": category_l1,
         "category_l2": category_l2,
         "is_active": True,

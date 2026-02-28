@@ -31,7 +31,7 @@ def test_compute_change_summary_counts_are_deterministic():
     selected = normalized[:2]
 
     summary = sync.compute_change_summary(
-        fetched_markets=9,
+        fetched_markets=3,
         raw_count_total=5,
         normalized_items=normalized,
         selected_items=selected,
@@ -39,7 +39,7 @@ def test_compute_change_summary_counts_are_deterministic():
         push_result="skipped",
     )
 
-    assert summary["fetched_markets"] == 9
+    assert summary["fetched_markets"] == 3
     assert summary["raw_count_total"] == 5
     assert summary["normalized_unique"] == 3
     assert summary["limited_to"] == 2
@@ -79,7 +79,7 @@ def test_sync_dry_run_skips_backend_write_paths(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "total=1" in out
     assert "change_summary=" in out
-    assert "summary fetched_markets=9" in out
+    assert "summary fetched_markets=3" in out
 
     summary_line = next(line for line in out.splitlines() if line.startswith("change_summary="))
     payload = json.loads(summary_line.split("=", 1)[1])

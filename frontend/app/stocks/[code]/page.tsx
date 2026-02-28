@@ -5,6 +5,9 @@ type StockDetail = {
   name_kr: string;
   name_en: string | null;
   market: string;
+  security_type: string;
+  mrkt_tp_raw: string | null;
+  market_code_raw: string | null;
   category_l1: string | null;
   category_l2: string | null;
   is_active: boolean;
@@ -73,6 +76,18 @@ export default async function StockDetailPage({ params }: Props) {
             <div>
               <dt className="text-xs text-gray-500">market</dt>
               <dd>{data.market}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">security_type</dt>
+              <dd>{data.security_type}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">mrkt_tp_raw</dt>
+              <dd>{data.mrkt_tp_raw ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">market_code_raw</dt>
+              <dd>{data.market_code_raw ?? "-"}</dd>
             </div>
             <div>
               <dt className="text-xs text-gray-500">category_l1</dt>

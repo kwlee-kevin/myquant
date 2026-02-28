@@ -11,6 +11,7 @@ class StockListSerializer(serializers.ModelSerializer):
             "name_kr",
             "name_en",
             "market",
+            "security_type",
             "category_l1",
             "category_l2",
             "is_active",
@@ -26,6 +27,9 @@ class StockDetailSerializer(serializers.ModelSerializer):
             "name_kr",
             "name_en",
             "market",
+            "security_type",
+            "mrkt_tp_raw",
+            "market_code_raw",
             "category_l1",
             "category_l2",
             "is_active",
@@ -42,7 +46,18 @@ class UpsertItemSerializer(serializers.Serializer):
     name_en = serializers.CharField(
         max_length=120, allow_null=True, required=False, allow_blank=True
     )
-    market = serializers.CharField(max_length=16)
+    market = serializers.ChoiceField(choices=StockMaster.Market.values)
+    security_type = serializers.ChoiceField(
+        choices=StockMaster.SecurityType.values,
+        required=False,
+        default=StockMaster.SecurityType.COMMON_STOCK,
+    )
+    mrkt_tp_raw = serializers.CharField(
+        max_length=8, allow_null=True, required=False, allow_blank=True
+    )
+    market_code_raw = serializers.CharField(
+        max_length=8, allow_null=True, required=False, allow_blank=True
+    )
     category_l1 = serializers.CharField(
         max_length=64, allow_null=True, required=False, allow_blank=True
     )

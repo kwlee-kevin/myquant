@@ -181,4 +181,4 @@ def test_sync_stocks_non_dry_run_success_prints_result(monkeypatch, capsys):
     assert code == 0
     out = capsys.readouterr().out
     assert '{"received": 1, "inserted": 1}' in out
-    assert "summary fetched_markets=9" in out
+    assert "summary fetched_markets=3" in out
