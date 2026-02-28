@@ -99,6 +99,46 @@ Default thresholds:
 
 ---
 
+# 🔁 Development Protocol
+
+## Branch Naming
+Use one of:
+- `feat/<short-topic>`
+- `fix/<short-topic>`
+- `chore/<short-topic>`
+- `test/<short-topic>`
+- `docs/<short-topic>`
+
+## Standard Local Workflow
+```bash
+git checkout main && git pull
+git checkout -b <branch>
+make lint
+make ci
+make coverage-check
+```
+
+## PR Workflow
+1. Push branch.
+2. Open pull request.
+3. Wait for required checks.
+4. Review coverage summary comment on the PR.
+5. Merge after approvals and green checks.
+
+## Repository Protection Rules
+- `main` is protected.
+- Pull requests are required for merge.
+- Required checks must pass before merge.
+
+## Pre-commit Usage
+```bash
+make tools
+make precommit
+make precommit-run
+```
+
+---
+
 # 🧹 Linting & Formatting
 
 We use **ruff** for linting and formatting.
