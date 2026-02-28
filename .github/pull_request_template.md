@@ -1,10 +1,10 @@
-## Summary
+## Summary (What changed / Why)
 - What changed:
 - Why:
 
 ## Linked Spec
-- Spec: [docs/specs/...]
-- ADR (if any): [docs/adr/...]
+- Spec (optional): `docs/specs/...`
+- ADR (optional): `docs/adr/...`
 
 ## Type
 - [ ] feat
@@ -12,16 +12,25 @@
 - [ ] refactor
 - [ ] docs
 - [ ] test
+- [ ] chore
 
 ## Test Evidence
 Commands run:
 ```bash
-# paste commands
+# e.g.
+# make lint
+# make ci
 ```
 
 Results:
 ```text
-# paste outputs
+# paste key output lines
+```
+
+## Coverage Evidence
+`make coverage-check` result:
+```text
+# paste backend/bridge coverage summary lines
 ```
 
 ## Risk & Rollback Plan
@@ -29,10 +38,5 @@ Results:
 - Potential impact:
 - Rollback steps:
 
-## Definition of Done Checklist
-- [ ] Spec/acceptance criteria updated
-- [ ] Code implemented for required scope
-- [ ] Error handling/hardening included
-- [ ] Tests added/updated and passing
-- [ ] Docs/runbook updated
-- [ ] Reviewer can validate via provided commands
+## Notes (optional)
+- Additional context for reviewers:
