@@ -47,3 +47,21 @@ cp .env.example .env
 ```
 
 Never commit `.env` or any secrets.
+
+## Local Sync Flow (Single Source of Truth)
+Root `.env` is the shared source for both backend (docker compose) and bridge (local venv), including `BRIDGE_API_KEY`.
+
+```bash
+cp .env.example .env
+docker compose up -d backend
+cd bridge
+PYTHONWARNINGS=ignore PYTHONPATH=src ./.venv/bin/python -m bridge.cli sync
+```
+
+### Troubleshooting 401 (Bridge -> Backend upsert)
+Verify backend container and root `.env` share the same key:
+
+```bash
+docker compose exec backend env | grep BRIDGE_API_KEY
+cat .env | grep BRIDGE_API_KEY
+```
