@@ -33,6 +33,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print("--limit must be >= 1")
             return 2
 
+        from .config import load_bridge_env_files
+
+        load_bridge_env_files()
+
         # Import lazily so --help never loads requests/dotenv/Kiwoom modules.
         from .sync import sync_stocks
 

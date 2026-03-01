@@ -135,21 +135,27 @@ def test_check_backend_health_handles_connection_error(monkeypatch):
 
 
 def test_sync_stocks_missing_envs_returns_2(monkeypatch, capsys):
+    monkeypatch.setenv("KIWOOM_MODE", "paper")
     monkeypatch.delenv("KIWOOM_APP_KEY", raising=False)
     monkeypatch.delenv("KIWOOM_APP_SECRET", raising=False)
-    monkeypatch.setenv("KIWOOM_BASE_URL", "https://kiwoom.example")
+    monkeypatch.delenv("KIWOOM_PAPER_APP_KEY", raising=False)
+    monkeypatch.delenv("KIWOOM_PAPER_APP_SECRET", raising=False)
+    monkeypatch.setenv("KIWOOM_PAPER_HOST_URL", "https://kiwoom.example")
     code = sync.sync_stocks(dry_run=True, limit=None, verbose=False)
     assert code == 2
-    assert "Missing required env vars" in capsys.readouterr().out
+    assert "Missing Kiwoom configuration for mode=paper" in capsys.readouterr().out
 
 
 def test_sync_stocks_missing_base_url_returns_2(monkeypatch, capsys):
-    monkeypatch.setenv("KIWOOM_APP_KEY", "key")
-    monkeypatch.setenv("KIWOOM_APP_SECRET", "secret")
+    monkeypatch.setenv("KIWOOM_MODE", "paper")
+    monkeypatch.setenv("KIWOOM_PAPER_APP_KEY", "key")
+    monkeypatch.setenv("KIWOOM_PAPER_APP_SECRET", "secret")
+    monkeypatch.delenv("KIWOOM_HOST_URL", raising=False)
     monkeypatch.delenv("KIWOOM_BASE_URL", raising=False)
+    monkeypatch.delenv("KIWOOM_PAPER_HOST_URL", raising=False)
     code = sync.sync_stocks(dry_run=True, limit=None, verbose=False)
     assert code == 2
-    assert "Missing required env var: KIWOOM_BASE_URL" in capsys.readouterr().out
+    assert "KIWOOM_PAPER_HOST_URL" in capsys.readouterr().out
 
 
 def test_sync_stocks_token_failure_returns_1(monkeypatch, capsys):

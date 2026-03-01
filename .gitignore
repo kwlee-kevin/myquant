@@ -4,6 +4,7 @@
 # env files
 .env
 .env.*
+bridge/.env
 !.env.example
 
 # Python

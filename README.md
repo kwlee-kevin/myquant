@@ -1,280 +1,49 @@
 # MyQuant
 
-Data-driven quantitative investment platform.
+MyQuant is a stock data platform with a Django backend, a local bridge for Kiwoom ingestion, and a Next.js frontend.
 
----
+## Documentation
+Primary docs entry point:
+- `docs/README.md`
 
-# 🚀 Project Overview
+Key docs:
+- System overview: `docs/specs/system-overview.md`
+- Specs index/template: `docs/specs/README.md`, `docs/specs/_template.md`
+- Developer workflow: `docs/protocol/developer-workflow.md`
+- Runbooks: `docs/runbooks/`
 
-MyQuant is a structured quantitative investment research platform consisting of:
+## Documentation Policy (Mandatory)
+All code changes must keep documentation up to date.
 
-- **Backend (Django + PostgreSQL)**
-- **Bridge (Kiwoom API sync layer)**
-- **Frontend (Next.js)**
-- **Docker-based local development**
-- **CI (GitHub Actions)**
+Rules:
+- Any feature change must update the relevant spec under `docs/specs/`.
+- Any architectural or structural change must include a new ADR under `docs/adr/`.
+- Any workflow/process change must update `docs/protocol/`.
+- Pull Requests that modify code must also modify at least one documentation file when applicable.
+- CI and review may reject PRs that introduce behavioral changes without corresponding documentation updates.
 
-The repository enforces automated testing, linting, and guardrails to ensure reliability and long-term maintainability.
+This repository follows a "docs-first or docs-with-code" development model to ensure long-term stability and AI-assisted repeatability.
 
----
+CI Docs Gate:
+- PRs with code-path changes must include docs changes, or use label `docs-not-needed` with justification in the PR description.
 
-# 🧪 Continuous Integration (CI)
-
-GitHub Actions workflow:
-
-```
-.github/workflows/ci.yml
-```
-
-### Triggers
-
-- `push` to `main`
-- `pull_request` targeting `main`
-
-### Jobs
-
-#### 1️⃣ backend-tests
-
+## Quick Commands
 ```bash
-docker compose build backend
-docker compose run --rm backend pytest -q
-```
-
-#### 2️⃣ bridge-tests (Python 3.9)
-
-```bash
-cd bridge
-python3 -m venv .venv
-./.venv/bin/python -m pip install -U pip
-./.venv/bin/python -m pip install -r requirements.txt
-PYTHONPATH=src ./.venv/bin/python -m pytest -q
-```
-
-No production secrets are required for CI. Dummy values are used for test execution.
-
----
-
-# 🛠 Local Development
-
-## Run Backend Tests
-
-```bash
-docker compose build backend
-docker compose run --rm backend pytest -q
-```
-
-## Run Bridge Tests
-
-```bash
-cd bridge
-python3 -m venv .venv
-./.venv/bin/python -m pip install -U pip
-./.venv/bin/python -m pip install -r requirements.txt
-PYTHONPATH=src ./.venv/bin/python -m pytest -q
-```
-
-## Bridge Sync Dry-Run
-Preview normalized stock sync output without backend writes:
-
-```bash
-cd bridge
-PYTHONPATH=src ./.venv/bin/python -m bridge.cli sync --dry-run --limit 5
-```
-
-## Coverage
-Generate backend + bridge coverage reports locally:
-
-```bash
-make coverage
-```
-
-Coverage XML files are written to host path:
-- `./coverage/backend-coverage.xml`
-- `./coverage/bridge-coverage.xml`
-- CI publishes backend/bridge coverage totals in the GitHub Actions Job Summary.
-- CI also uploads coverage XML files as workflow artifacts.
-- On pull requests, CI posts/updates a sticky coverage summary comment.
-
-Optional threshold check:
-
-```bash
-make coverage-check
-```
-
-Default thresholds:
-- backend: `85%`
-- bridge: `55%`
-
----
-
-# 🔁 Development Protocol
-
-## Branch Naming
-Use one of:
-- `feat/<short-topic>`
-- `fix/<short-topic>`
-- `chore/<short-topic>`
-- `test/<short-topic>`
-- `docs/<short-topic>`
-
-## Standard Local Workflow
-```bash
-git checkout main && git pull
-git checkout -b <branch>
-make lint
+make tools
 make ci
 make coverage-check
 ```
 
-## PR Workflow
-1. Push branch.
-2. Open pull request.
-3. Wait for required checks.
-4. Review coverage summary comment on the PR.
-5. Merge after approvals and green checks.
-
-## Repository Protection Rules
-- `main` is protected.
-- Pull requests are required for merge.
-- Required checks must pass before merge.
-
-## Pre-commit Usage
+## Bridge Sync (Dry-Run)
 ```bash
-make tools
-make precommit
-make precommit-run
+cd bridge
+PYTHONPATH=src ./.venv/bin/python -m bridge.cli sync --dry-run --limit 20
 ```
 
----
-
-# 🧹 Linting & Formatting
-
-We use **ruff** for linting and formatting.
-
-### Auto-fix
-
+## Environment
 ```bash
-ruff check . --fix
-ruff format .
+cp .env.example .env
+# edit .env (local only)
 ```
 
-### Check only (CI equivalent)
-
-```bash
-ruff check .
-ruff format --check .
-```
-
----
-
-# 📦 Standardized Dev Commands
-
-The project includes a Makefile to unify developer workflow.
-
-### Run lint
-
-```bash
-make lint
-```
-
-### Run format
-
-```bash
-make format
-```
-
-### Run all tests
-
-```bash
-make test
-```
-
-### Run full CI locally
-
-```bash
-make ci
-```
-
-## Quick start (recommended)
-
-```bash
-make tools
-make precommit
-make ci
-```
-
----
-
-# 🔐 Dev Guardrails
-
-The repository enforces safety rules via:
-
-### `.gitignore`
-Blocks:
-- `.DS_Store`
-- `.env`
-- virtual environments
-- `node_modules`
-- `.next`
-- logs
-
-`.env.example` remains tracked as a template.
-
-### Pre-commit Hooks
-
-Enforced checks:
-- trailing whitespace / EOF normalization
-- merge conflict markers
-- private key detection
-- large file blocking
-- blocked path protection
-- ruff linting
-
-Install locally:
-
-```bash
-python3 -m pip install pre-commit
-pre-commit install
-pre-commit run --all-files
-```
-
----
-
-# 🏗 Architecture Summary
-
-```
-MyQuant
- ├── backend (Django API)
- ├── bridge (Kiwoom sync layer)
- ├── frontend (Next.js UI)
- ├── docker-compose.yml
- └── .github/workflows
-```
-
----
-
-# 📌 Engineering Principles
-
-- CI must pass before merge
-- Tests protect critical logic
-- Lint must pass
-- PR-based workflow
-- No secrets in repository
-
----
-
-# 🔮 Next Improvements
-
-Planned improvements:
-
-- Test coverage reporting
-- Type safety (mypy)
-- Version tagging strategy
-- Release notes automation
-- ADR documentation structure
-
----
-
-# License
-
-MIT (to be finalized)
+Never commit `.env` or any secrets.

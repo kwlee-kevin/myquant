@@ -10,9 +10,10 @@ class DummySession:
 
 
 def _set_required_env(monkeypatch):
-    monkeypatch.setenv("KIWOOM_BASE_URL", "https://kiwoom.example")
-    monkeypatch.setenv("KIWOOM_APP_KEY", "key")
-    monkeypatch.setenv("KIWOOM_APP_SECRET", "secret")
+    monkeypatch.setenv("KIWOOM_MODE", "paper")
+    monkeypatch.setenv("KIWOOM_PAPER_HOST_URL", "https://kiwoom.example")
+    monkeypatch.setenv("KIWOOM_PAPER_APP_KEY", "key")
+    monkeypatch.setenv("KIWOOM_PAPER_APP_SECRET", "secret")
     monkeypatch.setenv("BACKEND_API_BASE", "http://localhost:8000")
     monkeypatch.setenv("BRIDGE_API_KEY", "bridge-key")
 
