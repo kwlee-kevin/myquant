@@ -8,6 +8,11 @@ Provide one of the following:
 - ADR (if any): `docs/adr/...`
 - `N/A (reason)` for tiny changes only
 
+Reference:
+- Docs index: `docs/README.md`
+- Spec guide: `docs/specs/README.md`
+- Workflow/checklists: `docs/protocol/developer-workflow.md`, `docs/protocol/checklists.md`
+
 ## Type
 - [ ] feat
 - [ ] fix

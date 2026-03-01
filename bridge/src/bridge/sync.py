@@ -9,6 +9,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .config import load_bridge_env_files, resolve_kiwoom_config
+
 MARKET_TYPES = ["0", "10", "50"]
 
 SECURITY_TYPE_MAP = {
@@ -28,11 +30,7 @@ SECURITY_TYPE_MAP = {
 
 
 def _load_dotenv_if_available() -> None:
-    try:
-        from dotenv import load_dotenv  # type: ignore
-    except Exception:
-        return
-    load_dotenv()
+    load_bridge_env_files()
 
 
 def _create_retry_session() -> requests.Session:
@@ -303,20 +301,22 @@ def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
 
     _load_dotenv_if_available()
 
-    base_url = os.getenv("KIWOOM_BASE_URL", "").strip()
-    app_key = os.getenv("KIWOOM_APP_KEY", "").strip()
-    app_secret = os.getenv("KIWOOM_APP_SECRET", "").strip()
-    backend_api_base = os.getenv("BACKEND_API_BASE", "http://localhost:8000").strip().rstrip("/")
+    backend_api_base = (
+        (os.getenv("BACKEND_API_BASE") or os.getenv("MYQUANT_BASE_URL") or "http://localhost:8000")
+        .strip()
+        .rstrip("/")
+    )
     bridge_api_key = os.getenv("BRIDGE_API_KEY", "dev-bridge-key").strip() or "dev-bridge-key"
 
-    if not app_key or not app_secret:
-        print("Missing required env vars: KIWOOM_APP_KEY and/or KIWOOM_APP_SECRET")
+    try:
+        kiwoom = resolve_kiwoom_config()
+    except ValueError as exc:
+        print(str(exc))
         print_summary([], [])
         return 2
-    if not base_url:
-        print("Missing required env var: KIWOOM_BASE_URL")
-        print_summary([], [])
-        return 2
+    base_url = kiwoom.host_url
+    app_key = kiwoom.app_key
+    app_secret = kiwoom.app_secret
 
     session = _create_retry_session()
 

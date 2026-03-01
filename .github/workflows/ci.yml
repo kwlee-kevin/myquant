@@ -11,6 +11,86 @@ permissions:
   pull-requests: write
 
 jobs:
+  docs-gate:
+    name: docs-gate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce docs updates for code changes
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info("No pull_request context. Skipping docs gate.");
+              return;
+            }
+
+            const codePrefixes = [
+              "backend/",
+              "bridge/",
+              "frontend/",
+              "scripts/",
+              ".github/workflows/",
+            ];
+            const docPrefixes = [
+              "docs/",
+            ];
+            const docFiles = new Set([
+              "README.md",
+              ".github/pull_request_template.md",
+            ]);
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            const changed = files.map((f) => f.filename);
+            const codeChanged = changed.filter((path) =>
+              codePrefixes.some((prefix) => path.startsWith(prefix))
+            );
+            const docChanged = changed.filter(
+              (path) =>
+                docPrefixes.some((prefix) => path.startsWith(prefix)) || docFiles.has(path)
+            );
+
+            const labels = (pr.labels || []).map((l) => l.name);
+            const exempt = labels.includes("docs-not-needed");
+
+            core.info(`Changed files: ${changed.length}`);
+            core.info(`Code-changed files: ${codeChanged.length}`);
+            core.info(`Doc-changed files: ${docChanged.length}`);
+            core.info(`Labels: ${labels.join(", ") || "(none)"}`);
+
+            const summarize = (items) => {
+              if (!items.length) return "(none)";
+              const first = items.slice(0, 20).map((p) => `- ${p}`).join("\n");
+              const tail = items.length > 20 ? `\n- ... (+${items.length - 20} more)` : "";
+              return `${first}${tail}`;
+            };
+
+            if (codeChanged.length > 0 && docChanged.length === 0 && !exempt) {
+              const message = [
+                "Docs Gate failed: code changes detected but no documentation updates were found.",
+                "",
+                "Detected code-changed paths:",
+                summarize(codeChanged),
+                "",
+                "Detected doc-changed paths:",
+                summarize(docChanged),
+                "",
+                "Update docs/ or README.md, or add label docs-not-needed with justification in PR description.",
+              ].join("\n");
+              core.setFailed(message);
+              return;
+            }
+
+            core.info("Docs Gate passed.");
+
   lint:
     name: lint (ruff)
     runs-on: ubuntu-latest
