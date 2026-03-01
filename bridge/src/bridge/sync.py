@@ -302,7 +302,7 @@ def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
     _load_dotenv_if_available()
 
     backend_api_base = (
-        (os.getenv("BACKEND_API_BASE") or os.getenv("MYQUANT_BASE_URL") or "http://localhost:8000")
+        (os.getenv("BACKEND_API_BASE") or os.getenv("MYQUANT_BASE_URL") or "http://127.0.0.1:8000")
         .strip()
         .rstrip("/")
     )
@@ -398,7 +398,13 @@ def sync_stocks(dry_run: bool, limit: int | None, verbose: bool = False) -> int:
             push_result = result
         except (requests.ConnectionError, requests.Timeout, requests.HTTPError) as exc:
             status_code = getattr(getattr(exc, "response", None), "status_code", None)
-            print(f"Backend upsert failed url={upsert_url} status={status_code}")
+            if status_code == 401:
+                print(
+                    f"Backend upsert failed url={upsert_url} status=401. "
+                    "Check BRIDGE_API_KEY in root .env matches backend container env."
+                )
+            else:
+                print(f"Backend upsert failed url={upsert_url} status={status_code}")
             push_result = f"upsert_error_status_{status_code}"
             print_summary(items, normalized_items)
             return 4

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from bridge.config import load_bridge_env_files, resolve_kiwoom_config
+from bridge.config import find_repo_root, load_bridge_env_files, resolve_kiwoom_config
 
 
 def test_resolve_kiwoom_config_paper_mode_with_mode_specific_vars():
@@ -52,7 +52,7 @@ def test_resolve_kiwoom_config_invalid_mode_raises():
         resolve_kiwoom_config({"KIWOOM_MODE": "sandbox"})
 
 
-def test_load_bridge_env_files_precedence_process_then_bridge_then_root(monkeypatch, tmp_path):
+def test_load_bridge_env_files_precedence_process_then_root_then_bridge(monkeypatch, tmp_path):
     bridge_env = tmp_path / "bridge.env"
     root_env = tmp_path / "root.env"
 
@@ -92,11 +92,17 @@ def test_load_bridge_env_files_precedence_process_then_bridge_then_root(monkeypa
         load_bridge_env_files(Path(bridge_env), Path(root_env))
 
         assert "process-key" == os.environ["KIWOOM_PAPER_APP_KEY"]
-        assert "bridge-secret" == os.environ["KIWOOM_PAPER_APP_SECRET"]
-        assert "https://bridge.mock" == os.environ["KIWOOM_PAPER_HOST_URL"]
+        assert "root-secret" == os.environ["KIWOOM_PAPER_APP_SECRET"]
+        assert "https://root.mock" == os.environ["KIWOOM_PAPER_HOST_URL"]
     finally:
         for key, value in originals.items():
             if value is None:
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = value
+
+
+def test_find_repo_root_returns_project_root():
+    root = find_repo_root()
+    assert (root / "docker-compose.yml").exists()
+    assert (root / "bridge").exists()

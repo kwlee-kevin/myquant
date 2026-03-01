@@ -14,9 +14,21 @@ class KiwoomConfig:
     host_url: str
 
 
+def find_repo_root(start: Path | None = None) -> Path:
+    cursor = (start or Path(__file__)).resolve()
+    if cursor.is_file():
+        cursor = cursor.parent
+
+    for candidate in [cursor, *cursor.parents]:
+        if (candidate / "docker-compose.yml").exists() and (candidate / "bridge").exists():
+            return candidate
+
+    return Path(__file__).resolve().parents[3]
+
+
 def _default_env_paths() -> tuple[Path, Path]:
-    bridge_dir = Path(__file__).resolve().parents[2]
-    repo_root = bridge_dir.parent
+    repo_root = find_repo_root()
+    bridge_dir = repo_root / "bridge"
     return bridge_dir / ".env", repo_root / ".env"
 
 
@@ -34,12 +46,12 @@ def load_bridge_env_files(
 
     # Precedence:
     # 1) process env (already set)
-    # 2) bridge/.env
-    # 3) root .env
-    if bridge_path.exists():
-        load_dotenv(dotenv_path=bridge_path, override=False)
+    # 2) repo root .env
+    # 3) bridge/.env
     if root_path.exists():
         load_dotenv(dotenv_path=root_path, override=False)
+    if bridge_path.exists():
+        load_dotenv(dotenv_path=bridge_path, override=False)
 
 
 def resolve_kiwoom_config(env: Mapping[str, str] | None = None) -> KiwoomConfig:
