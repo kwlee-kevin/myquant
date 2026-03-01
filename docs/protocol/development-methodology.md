@@ -86,5 +86,5 @@
 ## 6. Documentation Governance
 - `docs/specs/`: feature-level contracts and MVP/phase specs.
 - `docs/adr/`: architectural decision records and long-term tradeoffs.
-- `docs/runbook/`: operational procedures, troubleshooting, incident actions.
-- `docs/dev/`: engineering standards, checklists, prompt templates.
+- `docs/runbooks/`: operational procedures, troubleshooting, incident actions.
+- `docs/protocol/`: engineering standards, checklists, prompt templates.
