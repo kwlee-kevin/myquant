@@ -135,6 +135,7 @@ def test_check_backend_health_handles_connection_error(monkeypatch):
 
 
 def test_sync_stocks_missing_envs_returns_2(monkeypatch, capsys):
+    monkeypatch.setattr(sync, "_load_dotenv_if_available", lambda: None)
     monkeypatch.setenv("KIWOOM_MODE", "paper")
     monkeypatch.delenv("KIWOOM_APP_KEY", raising=False)
     monkeypatch.delenv("KIWOOM_APP_SECRET", raising=False)
@@ -147,6 +148,7 @@ def test_sync_stocks_missing_envs_returns_2(monkeypatch, capsys):
 
 
 def test_sync_stocks_missing_base_url_returns_2(monkeypatch, capsys):
+    monkeypatch.setattr(sync, "_load_dotenv_if_available", lambda: None)
     monkeypatch.setenv("KIWOOM_MODE", "paper")
     monkeypatch.setenv("KIWOOM_PAPER_APP_KEY", "key")
     monkeypatch.setenv("KIWOOM_PAPER_APP_SECRET", "secret")
